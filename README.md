@@ -12,13 +12,13 @@ coverage policy.
 
 This is a ground-up rebuild (v2) of an earlier prototype. The original
 Gemini/LangChain implementation is preserved untouched as a public record of
-the evolution: [scholar-agent v1](<V1_REPO_URL_HERE>).
+the evolution: [scholar-agent v1](https://github.com/shilpamusale/scholar-agent).
 
 The rebuild narrative — what changed, what was wrong with v1, and why — is
-defensible decision-by-decision via the ADR log in [docs/DECISIONS.md](docs/DECISIONS.md)
-(populated from Day 2 onward).
+defensible decision-by-decision via the ADR log in
+[docs/DECISIONS.md](docs/DECISIONS.md) (populated from Day 2 onward).
 
 ## Status
 
-Phase 1 — Foundation & Domain Reframe (in progress). See the
-[rebuild tracker](#) for the full 27-day plan.
+Phase 1 — Foundation & Domain Reframe (in progress). Full 27-day rebuild plan
+tracked separately.
