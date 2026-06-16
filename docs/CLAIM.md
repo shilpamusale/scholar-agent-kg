@@ -54,6 +54,12 @@ diagnostic (see below).
 
 **Labeled set:** 60 queries, stratified across the four query classes
 (target ≈ 15 per class), each with a gold answer and a gold query-class label.
+This 60-query set is a **pilot**, powered to detect a *large concentrated
+interaction*, not to certify small per-class differences: at ≈15 queries per
+class the standard error on a per-cell accuracy is ≈ ±0.12, so the decision
+thresholds below are deliberately set to a gap that sits outside that noise
+floor. A pre-registered larger set (≈ 40–100 per class) that could resolve
+finer differences is recorded as future work.
 
 ---
 
@@ -75,17 +81,22 @@ diagnostic (see below).
 **Decision rule (the quantitative bar).** Let *lift(class)* =
 accuracy(`Manager-KG-hybrid`, class) − accuracy(best-non-graph, class).
 
-H1 is **supported** if BOTH hold:
-1. **Concentrated lift:** mean *lift* on the three high-load classes ≥ **0.20**
-   (20 percentage points), AND
-2. **Flat-where-flat-should-be:** *lift* on `semantic-similarity` ≤ **0.05**
-   (within noise of zero).
+H1 is **supported** if ALL three hold:
+1. **Concentrated lift:** mean *lift* on the three high-load classes ≥ **0.25**
+   (25 percentage points), AND
+2. **Flat-where-flat-should-be:** *lift* on `semantic-similarity` ≤ **0.10**, AND
+3. **Resolvable separation:** the gap (high-load mean lift − semantic-similarity
+   lift) ≥ **0.15**.
 
-H1 is **falsified** (H1₀ retained) if *lift* on `semantic-similarity` is **not
-materially smaller** than the high-load mean — operationally, if
-(high-load mean lift − semantic-similarity lift) < **0.10**. A roughly flat
-profile means the gains come from a confound (more retrieval, model size,
-reranking) rather than from structure resolving the named mismatch shapes.
+These thresholds are set wider than statistical instinct might suggest *on
+purpose*: at n ≈ 15 per class a 5-point distinction is inside sampling noise, so
+the rule is written to fire only on a separation (≥ 0.15) the pilot can actually
+resolve. Certifying a smaller gap requires the larger set noted above.
+
+H1 is **falsified** (H1₀ retained) if the separation in condition (3) is below
+**0.15** — i.e., the lift is roughly flat across query classes. A flat profile
+means the gains come from a confound (more retrieval, model size, reranking)
+rather than from structure resolving the named mismatch shapes.
 
 > **The near-zero bar does as much work as the large-lift bar.** A reviewer
 > should read condition (2) as the load-bearing one: if the KG also lifts
