@@ -49,7 +49,7 @@ The research artifact is the **KG schema and routing architecture**, not the und
 
 ## Entity types (node labels)
 
-The graph encodes the coverage-determination hierarchy with **typed nodes per role in the policy logic**. The authoritative definitions (constraints, properties, indexes) live in [`schema.cypher`](../schema.cypher); this table is the conceptual vocabulary.
+The graph encodes the coverage-determination hierarchy with **typed nodes per role in the policy logic**. The authoritative definitions (constraints, properties, indexes) live in [`schema.cypher`](../schema.cypher); this table is the conceptual vocabulary. The diagram is in [`er-diagram.md`](er-diagram.md).
 
 | Entity | Definition | Example |
 |---|---|---|
@@ -82,8 +82,9 @@ Edges encode the traversal a human coder performs and an LLM skips. Direction is
 | `APPEALABLE_VIA` | CoverageCriterion → AppealGround | A denial on this criterion is appealable on a stated ground |
 | `CROSS_REFERENCES` | PolicyDocument → PolicyDocument · CoverageCriterion → CoverageCriterion | Materializes the "see §4.2 / refer to LCD L33394" pointer flat retrieval can't follow |
 | `SUPERSEDES` | PolicyDocument → PolicyDocument | Version control: newer doc supersedes older (resolves contradictions) |
-| `APPLIES_TO_PROCEDURE` | CoverageCriterion → Procedure | Inverse-direction convenience for criterion-anchored traversal |
 | `CODED_AS` | Procedure → CPTCode · MedicalNecessityCondition → ICDCode | Anchors entities to standardized vocabulary |
+
+> **Note on criterion → procedure traversal.** An earlier draft included a materialized inverse edge `APPLIES_TO_PROCEDURE` (CoverageCriterion → Procedure) for criterion-anchored queries. It was removed: Neo4j traverses relationships bidirectionally, so `(Procedure)-[:REQUIRES]->(CoverageCriterion)` is already navigable criterion→procedure via the reverse direction. The materialized inverse added an extra extraction target and a consistency burden for no traversal benefit. Recorded as ADR-003.
 
 The `OVERRIDDEN_BY` and `CROSS_REFERENCES` edges are the ones the thesis predicts flat RAG will miss, because in the source documents they live in cross-references and separate provisions rather than adjacent to the criterion they modify. Edge-level extraction recall on exactly these two relation types is the instrumentation that lets us attribute downstream failure to extraction vs. traversal — tracked as an open item for Phase 2.
 
@@ -95,4 +96,4 @@ The `OVERRIDDEN_BY` and `CROSS_REFERENCES` edges are the ones the thesis predict
 
 **Defined in `schema.cypher` (Day 3):** node properties, uniqueness/index constraints, and the formal Cypher constraint definitions. `DOMAIN.md` is the conceptual contract; `schema.cypher` is the enforced one — they must agree.
 
-**Recorded in `DECISIONS.md` (Day 2):** this reframe is ADR-001, with its stated tradeoff and falsification condition. The 5-node → typed-node refinement above is recorded against that ADR.
+**Recorded in `DECISIONS.md`:** ADR-001 (domain reframe) carries the typed-node refinement; ADR-003 records the removal of the `APPLIES_TO_PROCEDURE` inverse edge.

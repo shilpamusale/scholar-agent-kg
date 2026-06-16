@@ -3,13 +3,14 @@
 // schema.cypher  ·  Neo4j 5.x (Community edition compatible)
 // ============================================================================
 //
-// This file defines the node labels, uniqueness/existence constraints, and
+// This file defines the node labels, uniqueness/index constraints, and
 // indexes for the payer-policy knowledge graph. It is the authoritative
 // structural contract that the extraction pipeline (Phase 2) must validate
 // every extracted node/edge against before writing to Neo4j.
 //
 // Design provenance: docs/DOMAIN.md (entity/relation vocabulary),
-// ADR-001 (domain reframe), Module 3 (typed-node schema rationale).
+// ADR-001 (domain reframe), ADR-003 (drop materialized inverse edge),
+// Module 3 (typed-node schema rationale).
 //
 // SCHEMA REVIEW — which human-affordances become LLM failure seams:
 // Each node/edge below is annotated with the structural property it makes
@@ -152,6 +153,9 @@ FOR (c:CoverageCriterion) ON (c.source_doc_id);
 //
 //   (Procedure)-[:REQUIRES]->(CoverageCriterion)
 //       Core conditional edge: coverage requires a criterion be met.
+//       NOTE: criterion->procedure traversal uses the reverse direction of
+//       this edge — Neo4j traverses relationships bidirectionally, so no
+//       separate inverse edge is materialized (see ADR-003).
 //
 //   (CoverageCriterion)-[:REQUIRES]->(MedicalNecessityCondition)
 //       A criterion is gated by a clinical necessity condition.
@@ -177,9 +181,6 @@ FOR (c:CoverageCriterion) ON (c.source_doc_id);
 //   (PolicyDocument)-[:SUPERSEDES]->(PolicyDocument)
 //       Version control: newer doc supersedes older. Resolves contradiction
 //       between policy versions.
-//
-//   (CoverageCriterion)-[:APPLIES_TO_PROCEDURE]->(Procedure)
-//       Inverse-direction convenience for criterion-anchored traversal.
 //
 //   (Procedure)-[:CODED_AS]->(CPTCode)
 //   (MedicalNecessityCondition)-[:CODED_AS]->(ICDCode)

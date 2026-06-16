@@ -52,5 +52,37 @@ Entries are never edited once committed; they are superseded by later entries th
 **(3) Falsify.** This decision is wrong if the ablation shows the Manager-Claude arm provides no significant routing-accuracy gain over Manager-Gemini *and* no cost/latency advantage at equal quality — i.e., if the tiering buys nothing measurable. It is also wrong if router error (Haiku misrouting) dominates the end-to-end failure budget, which would argue for a stronger single model over a tiered split.
 
 ---
+ADR-003 — Drop the materialized inverse edge APPLIES_TO_PROCEDURE
+
+Status: Accepted · Day 3 · see DOMAIN.md, schema.cypher
+
+Context. An early draft of the schema included APPLIES_TO_PROCEDURE
+(CoverageCriterion → Procedure) as a "convenience inverse" of
+REQUIRES (Procedure → CoverageCriterion), intended to make criterion-anchored
+queries traverse up to the procedure directly. The ER diagram surfaced that the
+two edges are the same relationship traversed in opposite directions.
+
+(1) Reframe. A graph store that already supports bidirectional traversal
+makes a materialized inverse edge pure redundancy. The only legitimate reasons
+to materialize an inverse are (a) the engine cannot traverse the relationship in
+reverse, or (b) the inverse direction needs its own edge properties. Absent
+either, a duplicate edge adds an extraction target and a consistency obligation
+(both edges must be kept in sync) for no traversal benefit.
+
+(2) Apply. Neo4j traverses relationships in both directions natively —
+MATCH (c:CoverageCriterion)<-[:REQUIRES]-(p:Procedure) answers the
+criterion→procedure query without any separate edge. Neither edge-property nor
+engine-limitation condition holds here. Remove APPLIES_TO_PROCEDURE from the
+schema, the relation table, and the diagram. Tradeoff accepted: none of
+substance — the query capability is fully preserved via reverse traversal; the
+only change is one fewer relation type the extractor must populate and validate.
+
+(3) Falsify. This decision is wrong if a future query pattern needs
+direction-specific properties on the criterion→procedure edge (e.g. a confidence
+or provenance attribute that differs from the forward REQUIRES edge), in which
+case a distinct typed edge — not a bare inverse — would be reintroduced and
+recorded as a superseding ADR. It is also wrong if profiling shows reverse
+traversal of REQUIRES is a measured bottleneck that a materialized inverse
+demonstrably relieves; absent that evidence, the inverse stays out.
 
 *Next ADRs (ADR-003+) to be appended as Phase 2+ decisions are made: ingestion idempotency strategy, KG-vs-RAG tool boundary, judge-calibration method.*
