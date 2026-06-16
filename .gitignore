@@ -32,3 +32,4 @@ chroma_db/
 
 # Neo4j data
 neo4j_data/
+.chroma/

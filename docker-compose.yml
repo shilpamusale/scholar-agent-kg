@@ -1,0 +1,34 @@
+# ScholarAgent — local infrastructure
+# Brings up Neo4j (knowledge graph). ChromaDB runs as an embedded persistent
+# client from Python (no server needed), so only Neo4j needs a container.
+#
+# Usage: `make infra-up` / `make infra-down` (see Makefile targets).
+
+services:
+  neo4j:
+    image: neo4j:5.26-community
+    container_name: scholar-neo4j
+    ports:
+      - "7474:7474"   # HTTP browser UI
+      - "7687:7687"   # Bolt driver protocol
+    environment:
+      # Auth is read from .env (NEO4J_USER / NEO4J_PASSWORD). The image expects
+      # the combined NEO4J_AUTH=user/password form.
+      NEO4J_AUTH: "${NEO4J_USER:-neo4j}/${NEO4J_PASSWORD:-please-change-me}"
+      # APOC not required for the smoke test; add plugins here later if needed.
+      NEO4J_server_memory_heap_max__size: "1G"
+      NEO4J_server_memory_pagecache_size: "512M"
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+    healthcheck:
+      # cypher-shell returns 0 once Bolt is accepting queries
+      test: ["CMD-SHELL", "cypher-shell -u $${NEO4J_USER:-neo4j} -p $${NEO4J_PASSWORD:-please-change-me} 'RETURN 1' || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 30s
+
+volumes:
+  neo4j_data:
+  neo4j_logs:
