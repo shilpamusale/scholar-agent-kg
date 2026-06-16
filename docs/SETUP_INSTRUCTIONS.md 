@@ -1,0 +1,78 @@
+# Infra Standup: where each file goes & how to run
+
+## File placement (from repo root)
+
+| File in this bundle | Goes to |
+|---|---|
+| `docker-compose.yml` | `./docker-compose.yml` (repo root) |
+| `.env.example` | `./.env.example` (repo root) |
+| `tests/test_infra_smoke.py` | `./tests/test_infra_smoke.py` |
+| `Makefile.additions` | **append** contents into your existing `./Makefile` |
+
+## Steps
+
+### 1. Add the two runtime deps (Poetry)
+```bash
+poetry add neo4j chromadb
+```
+This updates `pyproject.toml` + `poetry.lock`. Commit both.
+
+### 2. Place the files
+```bash
+mv ~/Downloads/docker-compose.yml .
+mv ~/Downloads/.env.example .
+mv ~/Downloads/test_infra_smoke.py tests/
+# then open Makefile.additions and paste its targets into your Makefile
+```
+
+### 3. Make sure .env is gitignored (it holds your Neo4j password)
+```bash
+grep -qxF '.env' .gitignore || echo '.env' >> .gitignore
+grep -qxF '.chroma/' .gitignore || echo '.chroma/' >> .gitignore
+```
+
+### 4. Create your real .env
+```bash
+cp .env.example .env
+# edit .env: set a real NEO4J_PASSWORD
+```
+
+### 5. Bring up Neo4j
+```bash
+make infra-up        # waits until healthy, prints the browser URL
+```
+
+### 6. Apply the schema against live Neo4j (this is also your schema.cypher validation)
+```bash
+make schema-apply    # idempotent; safe to re-run
+```
+If `schema.cypher` has a syntax error, it surfaces HERE — this is the real
+validation that CI green could not give you.
+
+### 7. Run the smoke test
+```bash
+set -a; . ./.env; set +a        # load env into shell so pytest sees NEO4J_*
+poetry run pytest tests/test_infra_smoke.py -v
+```
+Expect 2 passed: one Neo4j node write/read, one Chroma embedding write/read.
+
+### 8. Commit
+```bash
+git add docker-compose.yml .env.example tests/test_infra_smoke.py Makefile pyproject.toml poetry.lock .gitignore
+git commit -m "feat: local infra (Neo4j docker + Chroma) + connectivity smoke test"
+git push origin main
+```
+
+## Notes
+- The smoke test SKIPS (not fails) when Neo4j is unreachable, so your existing
+  CI stays green without needing a database. To actually exercise it in CI you'd
+  add a Neo4j service container to the workflow — defer that unless you want it.
+- ChromaDB needs no container: it runs as an embedded persistent client. Only
+  Neo4j is dockerized.
+- Neo4j data persists in a named volume across `infra-down`/`infra-up`. To wipe:
+  `docker compose down -v`.
+- **Password change after first run:** Neo4j persists the password in its data
+volume on first startup and ignores `NEO4J_AUTH` on later restarts. If you
+change `NEO4J_PASSWORD` in `.env` after the first `make infra-up`, run
+`docker compose down -v` to drop the volume and re-initialize, then
+`make infra-up` + `make schema-apply` against the fresh database.
